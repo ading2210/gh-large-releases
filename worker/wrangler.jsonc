@@ -1,0 +1,9 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "gh-large-releases",
+  "compatibility_date": "2025-07-22",
+  "main": "index.js",
+  "observability": {
+    "enabled": true
+  }
+}
