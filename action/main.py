@@ -26,10 +26,14 @@ def pretty_size(size, decimal_places=2):
     size /= 1024.0
   return f"{size:.{decimal_places}f} {unit}"
 
-def upload_asset(args, release, name, data, length):
-  for asset in release["assets"]:
-    if asset["name"] == name:
-      raise RuntimeError(f"asset {name} has already been uploaded")
+def upload_asset(args, release, assets, name, data, length):
+  for asset in assets:
+    if asset["name"] != name:
+      continue
+    logging.warning(f"asset {name} has already been uploaded, deleting now")
+    delete_asset_url = f"https://api.github.com/repos/{args.repository}/releases/assets/{asset['id']}"
+    delete_response = session.delete(delete_asset_url)
+    delete_response.raise_for_status()
 
   url = f"https://uploads.github.com/repos/{args.repository}/releases/{release['id']}/assets?name={name}"
   r = session.post(url, data=data, timeout=httpx.Timeout(None), headers={
@@ -38,7 +42,7 @@ def upload_asset(args, release, name, data, length):
   })
   r.raise_for_status()
 
-def process_file(args, release, path):
+def process_file(args, release, assets, path):
   chunk_names = []
   original_size = path.stat().st_size
   big_chunk_size = int(args.big_chunk_size) if args.big_chunk_size else 2*1024*1024*1024
@@ -67,7 +71,7 @@ def process_file(args, release, path):
           logger.info(f"uploaded {pretty_size(total_uploaded)} / {pretty_size(total_size)} of {path.name}")
       
       chunk_names.append(new_name)
-      upload_asset(args, release, new_name, chunk_generator(), big_size)
+      upload_asset(args, release, assets, new_name, chunk_generator(), big_size)
 
   manifest = {
     "name": path.name,
@@ -79,7 +83,7 @@ def process_file(args, release, path):
   manifest_json = json.dumps(manifest, indent=2).encode()
   manifest_name = f"{path.name}.manifest"
 
-  upload_asset(args, release, manifest_name, manifest_json, len(manifest_json))
+  upload_asset(args, release, assets, manifest_name, manifest_json, len(manifest_json))
 
 #get the release we will use, creating one if needed
 def get_release(args, retry=False):
@@ -217,10 +221,11 @@ if __name__ == "__main__":
     "X-GitHub-Api-Version": "2022-11-28"
   })
   release = get_release(args)
+  assets = get_assets(release, args)
 
   base_path = pathlib.Path(args.workspace).resolve()
   for file_glob in args.files.split("\n"):
     for file_path in base_path.glob(file_glob.strip()):
-      process_file(args, release, file_path)
+      process_file(args, release, assets,file_path)
 
   update_release_body(args)
