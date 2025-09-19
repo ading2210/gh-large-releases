@@ -5,6 +5,7 @@ import json
 import math
 import re
 import logging
+import traceback
 
 import httpx
 
@@ -45,7 +46,7 @@ def upload_asset(args, release, assets, name, data, length):
 def process_file(args, release, assets, path):
   chunk_names = []
   original_size = path.stat().st_size
-  big_chunk_size = int(args.big_chunk_size) if args.big_chunk_size else 2*1024*1024*1024
+  big_chunk_size = int(args.big_chunk_size) if args.big_chunk_size else 2000*1024*1024
   big_chunk_size = min(original_size, big_chunk_size)
   small_chunk_size = 25*1024*1024 
 
@@ -226,6 +227,12 @@ if __name__ == "__main__":
   base_path = pathlib.Path(args.workspace).resolve()
   for file_glob in args.files.split("\n"):
     for file_path in base_path.glob(file_glob.strip()):
-      process_file(args, release, assets,file_path)
+      try:
+        process_file(args, release, assets,file_path)
+      except Exception as e:
+        logger.error("caught error:")
+        logger.error(traceback.format_exc())
+        logger.error("retrying file upload")
+        process_file(args, release, assets,file_path)
 
   update_release_body(args)
