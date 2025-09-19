@@ -89,20 +89,56 @@ When releases are uploaded by the action, the release description will include a
 https://gh-large-releases.ading2210.workers.dev/USER_NAME/REPO_NAME/releases/download/TAG_NAME/FILE_NAME
 ```
 
+### Permissions
+
+You need to grant `contents: write` permissions to the workflow.
+
+```yaml
+permissions:
+  contents: write
+```
+
+If `discussion_category_name` is provided, you also need the `discussions: write` permission.
+
+```yaml
+permissions:
+  contents: write
+  discussions: write
+```
+
 ## CF Workers Usage
 
-The Cloudflare worker supports downloading private releases, as long as you provide a Github API token as a secret. 
-
-To deploy your own worker with your own token, clone this repo and run the following commands:
+To deploy your own instance of the worker, clone this repo and run the following commands:
 ```
 npm i
 npm run deploy
+```
+
+Then, you can set the `worker_url` option when invoking the Github action to have the workflow link to your own instance of the worker.
+
+### Private Repos
+
+The Cloudflare worker supports downloading private releases, as long as you provide a Github API token as a secret. 
+
+To set the Github token on the worker after it has been deployed, create a secret called `GITHUB_TOKEN` on the worker, or run:
+
+```
 npm run deploy_set_token
 ```
 
-When prompted, paste your Github token into Wrangler.
+When prompted, paste your Github token into Wrangler. This token must be a fine grained personal access token with the same permissions as what the Actions workflow would use.
 
-Then, you can set the `worker_url` option when invoking the Github action. 
+### Whitelist Repos
+
+You may set a whitelist for repos that the worker is allowed to download from:
+
+Create a secret called `WHITELIST_REPOS` on the worker, or run:
+
+```
+npm run deploy_set_whitelist
+```
+
+Provide a comma seperated list of whitelisted repos, such as `user/private-repo,user/other-repo`.
 
 ## License
 

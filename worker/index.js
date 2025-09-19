@@ -158,6 +158,12 @@ export default {
     let repo = path_parts.slice(0, 2).join("/");
     let tag = path_parts[4];
     let file = path_parts[5];
+
+    if (env.WHITELIST_REPOS) {
+      let whitelist = env.WHITELIST_REPOS.split(",").map(s => s.trim());
+      if (!whitelist.includes(repo.trim()))
+        return new Response("404 not found", {status: 404});
+    }
     
     return fetch_big_chunks(request, repo, tag, file, env);
   }

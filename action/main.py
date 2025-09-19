@@ -135,12 +135,6 @@ def get_assets(release, args):
   
   return assets_list
 
-def get_table_line(manifest, args):
-  worker_url = args.worker_url or "https://gh-large-releases.ading2210.workers.dev"
-  download_url = f"{worker_url}/{args.repository}/releases/download/{args.tag_name}/{manifest['name']}"
-  download_link = f"[{manifest['name']}]({download_url})"
-  return f"| {download_link} | {pretty_size(manifest['size'])} | `{manifest['hash']}` |"
-
 #update release body to include links to the cf worker
 def update_release_body(args):
   tag_start = "<!-- START_BIG_ASSET_LIST_DO_NOT_REMOVE -->"
@@ -164,7 +158,14 @@ def update_release_body(args):
 
   manifests.sort(key=lambda x: x["name"])
   for manifest in manifests:
-    table_lines.append(get_table_line(manifest, args))
+    worker_url = args.worker_url or "https://gh-large-releases.ading2210.workers.dev"
+    download_url = f"{worker_url}/{args.repository}/releases/download/{args.tag_name}/{manifest['name']}"
+    download_link = f"[{manifest['name']}]({download_url})"
+    line = f"| {download_link} | {pretty_size(manifest['size'])} | `{manifest['hash']}` |"
+    table_lines.append(line)
+    
+  table_lines.append("> [!IMPORTANT]")
+  table_lines.append("> Download files from the links in the table above, instead of the assets list.")
 
   table_lines.append(tag_end)
   table_str = "\n".join(table_lines)

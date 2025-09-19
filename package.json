@@ -4,6 +4,7 @@
   "scripts": {
     "deploy": "cd worker; wrangler deploy",
     "deploy_set_token": "cd worker; wrangler secret put GITHUB_TOKEN",
+    "deploy_set_whitelist": "cd worker; wrangler secret put GITHUB_TOKEN",
     "dev": "cd worker; wrangler dev --ip 0.0.0.0 --port 8787"
   },
   "devDependencies": {
