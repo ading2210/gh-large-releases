@@ -8,7 +8,7 @@ inputs:
     required: false
     default: ${{ github.repository }}
   files:
-    description: "A list of files to upload to the release."
+    description: "A list of files to upload to the release. Glob syntax may be used here."
     required: true
   token:
     description: "The GitHub access token to use."
@@ -25,6 +25,7 @@ inputs:
   tag_name:
     description: "The name of the tag."
     required: false
+    default: ${{ github.ref }}
   target_commitish:
     description: "Specifies the commitish value that determines where the Git tag is created from."
     required: false
@@ -32,7 +33,7 @@ inputs:
     description: "The name of the release."
     required: false
   body:
-    description: "Text describing the contents of the tag."
+    description: "Text describing the contents of the release."
     required: false
   draft:
     description: "`true` to create a draft (unpublished) release, `false` to create a published one."
