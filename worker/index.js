@@ -72,6 +72,7 @@ async function get_assets(repo, tag, env) {
   while (next_page) {
     let next_page_response = await fetch(next_page, github_request_options(env));
     assets_list.push(...next_page_response.json());
+    next_page = find_next_page(next_page_response.headers.get("link"));
   }
 
   let assets = {};

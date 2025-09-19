@@ -80,7 +80,6 @@ def process_file(args, release, path):
   manifest_name = f"{path.name}.manifest"
 
   upload_asset(args, release, manifest_name, manifest_json, len(manifest_json))
-  update_release_body(args)
 
 #get the release we will use, creating one if needed
 def get_release(args, retry=False):
@@ -113,6 +112,35 @@ def create_release(args):
   r.raise_for_status()
   return r.json()
 
+def find_next_page(link_header):
+  if not link_header:
+    return None
+  link_regex = r'<(.+?)>; rel="(.+?)"'
+  for url, rel in re.findall(link_regex, link_header):
+    if rel == "next":
+      return url
+
+def get_assets(release, args):
+  assets_url = f"https://api.github.com/repos/{args.repository}/releases/{release['id']}/assets?per_page=100"
+  response = session.get(assets_url)
+  response.raise_for_status()
+  assets_list = response.json()
+
+  next_page = find_next_page(response.headers.get("link"))
+  while next_page:
+    next_response = session.get(next_page)
+    next_response.raise_for_status()
+    assets_list += next_response.json()
+    next_page = find_next_page(next_response.headers.get("link"))
+  
+  return assets_list
+
+def get_table_line(manifest, args):
+  worker_url = args.worker_url or "https://gh-large-releases.ading2210.workers.dev"
+  download_url = f"{worker_url}/{args.repository}/releases/download/{args.tag_name}/{manifest['name']}"
+  download_link = f"[{manifest['name']}]({download_url})"
+  return f"| {download_link} | {pretty_size(manifest['size'])} | `{manifest['hash']}` |"
+
 #update release body to include links to the cf worker
 def update_release_body(args):
   tag_start = "<!-- START_BIG_ASSET_LIST_DO_NOT_REMOVE -->"
@@ -123,9 +151,10 @@ def update_release_body(args):
     "| --------- | ---- | ------------ |"
   ]
   release = get_release(args)
+  assets = get_assets(release, args)
   
   manifests = []
-  for asset in release["assets"]:
+  for asset in assets:
     if not asset["name"].endswith(".manifest"):
       continue
     r = session.get(asset["url"], headers={
@@ -135,7 +164,7 @@ def update_release_body(args):
 
   manifests.sort(key=lambda x: x["name"])
   for manifest in manifests:
-    table_lines.append(f"| {manifest['name']} | {pretty_size(manifest['size'])} | `{manifest['hash']}` |")
+    table_lines.append(get_table_line(manifest, args))
 
   table_lines.append(tag_end)
   table_str = "\n".join(table_lines)
@@ -168,6 +197,7 @@ if __name__ == "__main__":
   parser.add_argument("--files")
   parser.add_argument("--token")
   parser.add_argument("--workspace")
+  parser.add_argument("--worker_url")
   parser.add_argument("--tag_name")
   parser.add_argument("--target_commitish")
   parser.add_argument("--name")
@@ -191,3 +221,5 @@ if __name__ == "__main__":
   for file_glob in args.files.split("\n"):
     for file_path in base_path.glob(file_glob.strip()):
       process_file(args, release, file_path)
+
+  update_release_body(args)

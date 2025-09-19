@@ -18,6 +18,9 @@ inputs:
     description: "The path to the default working directory."
     required: false
     default: ${{ github.workspace }}
+  worker_url:
+    description: "Override the URL to the Cloudflare Worker that serves the release files."
+    required: false
   
   tag_name:
     description: "The name of the tag."

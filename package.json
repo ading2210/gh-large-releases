@@ -2,7 +2,8 @@
   "name": "gh-large-releases",
   "version": "0.0.1",
   "scripts": {
-    "deploy": "cd worker; wrangler deploy;",
+    "deploy": "cd worker; wrangler deploy",
+    "deploy_set_token": "cd worker; wrangler secret put GITHUB_TOKEN",
     "dev": "cd worker; wrangler dev --ip 0.0.0.0 --port 8787"
   },
   "devDependencies": {
