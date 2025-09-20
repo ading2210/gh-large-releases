@@ -15,6 +15,9 @@ logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+def get_tag_name(tag_name):
+  return tag_name.replace("refs/tags/", "", 1)
+
 def get_size(total_size, chunk_size, chunk_count, i):
   if i == chunk_count - 1 and total_size % chunk_size > 0:
     return total_size % chunk_size
@@ -94,7 +97,7 @@ def get_release(args, retry=False):
   releases = r.json()
 
   for release in releases:
-    if release["tag_name"] == args.tag_name:
+    if get_tag_name(release["tag_name"]) == get_tag_name(args.tag_name):
       return release
   return create_release(args)
 
@@ -102,7 +105,7 @@ def get_release(args, retry=False):
 def create_release(args):
   url = f"https://api.github.com/repos/{args.repository}/releases"
   payload = {
-    "tag_name": args.tag_name,
+    "tag_name": get_tag_name(args.tag_name),
     "target_commitish": args.target_commitish or None,
     "name": args.name or None, 
     "body": args.body or None,
@@ -146,6 +149,7 @@ def update_release_body(args):
   tag_end = "<!-- END_BIG_ASSET_LIST_DO_NOT_REMOVE -->"
   table_lines = [
     tag_start,
+    "Release files generated with [ading2210/gh-large-releases](https://github.com/ading2210/gh-large-releases).",
     "| File Name | Size | SHA-256 Hash |", 
     "| --------- | ---- | ------------ |"
   ]
@@ -163,10 +167,10 @@ def update_release_body(args):
 
   manifests.sort(key=lambda x: x["name"])
   for manifest in manifests:
-    worker_url = args.worker_url or "https://gh-large-releases.ading2210.workers.dev"
-    download_url = f"{worker_url}/{args.repository}/releases/download/{args.tag_name}/{manifest['name']}"
+    worker_url = args.worker_url or "https://gh-releases.ading2210.workers.dev"
+    download_url = f"{worker_url}/{args.repository}/releases/download/{get_tag_name(args.tag_name)}/{manifest['name']}"
     download_link = f"[{manifest['name']}]({download_url})"
-    line = f"| {download_link} | {pretty_size(manifest['size'])} | `{manifest['hash']}` |"
+    line = f"| {download_link} | {pretty_size(manifest['size'])} | <sub><sup>`{manifest['hash']}`</sub></sup> |"
     table_lines.append(line)
     
   table_lines.append("> [!IMPORTANT]")
@@ -184,7 +188,7 @@ def update_release_body(args):
   
   url = f"https://api.github.com/repos/{args.repository}/releases/{release['id']}"
   payload = {
-    "tag_name": args.tag_name,
+    "tag_name": get_tag_name(args.tag_name),
     "target_commitish": args.target_commitish or None,
     "name": args.name or None, 
     "body": body,

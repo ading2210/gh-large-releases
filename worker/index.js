@@ -1,5 +1,9 @@
 import mime from "mime";
 
+function get_tag_name(tag_name) {
+  return tag_name.replace("refs/tags/", "");
+}
+
 function hex_to_b64(hex) {
   return btoa(hex.match(/\w{2}/g).map(function(a) {
     return String.fromCharCode(parseInt(a, 16));
@@ -41,7 +45,7 @@ async function get_release(repo, tag, env) {
       return null;
     let releases = await releases_response.json();
     for (let release of releases) {
-      if (release.tag_name === tag)
+      if (get_tag_name(release.tag_name) === get_tag_name(tag))
         return release;
     }
     return null;
